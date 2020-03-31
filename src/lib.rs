@@ -157,27 +157,7 @@ impl<T: FloatLike> MPolynomial<T> {
             }
         }
     }
-    // // Drop one variable
-    //pub fn reduce(&mut self, to_drop: usize) -> usize {
-    //    for n in self.coeffs.iter().enumerate(){
-    //    }
-    //    match self.powers.binary_search(pows) {
-    //        Ok(pos) => {
-    //            self.coeffs[pos] = self.coeffs[pos] + coeff;
-    //            pos
-    //        }
-    //        Err(pos) => {
-    //            self.powers.insert(pos, pows.clone());
-    //            self.coeffs.insert(pos, coeff);
-    //            let rank = pows.iter().sum();
-    //            if rank > self.max_rank {
-    //                self.max_rank = rank;
-    //            }
-    //            pos
-    //        }
-    //    }
-    //}
-
+    
     // Take the n-th power of a multivariate linear function
     // (c + a1 * x1 + a2 * x2 + .. + ai * xi )^n
     // ids: are the ids coerresponding to the variables and constant
@@ -229,7 +209,8 @@ impl<T: FloatLike> MPolynomial<T> {
             "var_id starts from 1 with 0 reserved for the constant"
         );
         // Check if the replace variable depends on itself
-        let reduce = ids.iter().all(|&x| x == var_id);
+        let reduce = ids.iter().all(|&x| x != var_id);
+        println!("REDUCE: {}  for {:?} with {}", reduce, ids , var_id);
 
         let n_var = if reduce { self.n_var - 1 } else { self.n_var };
 
@@ -274,7 +255,12 @@ impl<T: FloatLike> MPolynomial<T> {
                 }
                 println!("");
             }
+            if reduce && var_pow > 0{
+                self.powers.remove(pos);
+                self.coeffs.remove(pos);
+            }else{
             pos += 1;
+            }
         }
     }
 }
