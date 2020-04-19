@@ -166,4 +166,125 @@ mod tests {
         mpoly_test.replace(1, &[11.0, -13.0, 17.0, 19.0], &[0, 1, 2, 3]);
         assert_eq!(mpoly_exact, mpoly_test);
     }
+    #[test]
+    fn multiplication_as_power() {
+        // compare (7-3x1+5x2)^6 using MPolynomial::mult and MPolynomial::linear_pown
+        let n_var = 2;
+        let n = 6;
+        // Create two copies of (3x1 +5x2)
+        let mut mpoly1 = mpolynomial::MPolynomial::new(n_var);
+        mpoly1.add(&vec![0, 0], 7.0);
+        mpoly1.add(&vec![1, 0], -3.0);
+        mpoly1.add(&vec![0, 1], 5.0);
+        let mut mpoly2 = mpolynomial::MPolynomial::new(n_var);
+        mpoly2.add(&vec![0, 0], 7.0);
+        mpoly2.add(&vec![1, 0], -3.0);
+        mpoly2.add(&vec![0, 1], 5.0);
+
+        // multiply
+        for _ in 1..n {
+            mpoly1.mult(&mpoly2);
+        }
+        // power
+        mpoly2 = mpolynomial::MPolynomial::linear_pown(&[7.0, -3.0, 5.0], &[0, 1, 2], n_var, n);
+        assert_eq!(mpoly1, mpoly2);
+    }
+
+    #[test]
+    fn multiplication_as_power_no_const() {
+        // compare (-3x1+5x2)^6 using MPolynomial::mult and MPolynomial::linear_pown
+        let n_var = 2;
+        let n = 6;
+        // Create two copies of (3x1 +5x2)
+        let mut mpoly1 = mpolynomial::MPolynomial::new(n_var);
+        mpoly1.add(&vec![1, 0], -3.0);
+        mpoly1.add(&vec![0, 1], 5.0);
+        let mut mpoly2 = mpolynomial::MPolynomial::new(n_var);
+        mpoly2.add(&vec![1, 0], -3.0);
+        mpoly2.add(&vec![0, 1], 5.0);
+
+        // multiply
+        for _ in 1..n {
+            mpoly1.mult(&mpoly2);
+        }
+        // power
+        mpoly2 = mpolynomial::MPolynomial::linear_pown(&[-3.0, 5.0], &[1, 2], n_var, n);
+        assert_eq!(mpoly1, mpoly2);
+    }
+    #[test]
+    fn square() {
+        // compare (-3x1+5x2)^6 using MPolynomial::mult and MPolynomial::linear_pown
+        let n_var = 2;
+        let n = 2;
+        // Create two copies of (3x1 +5x2)
+        let mut mpoly1 = mpolynomial::MPolynomial::new(n_var);
+        mpoly1.add(&vec![1, 0], -3.0);
+        mpoly1.add(&vec![0, 1], 5.0);
+        mpoly1.square();
+
+        // power
+        let mpoly2 = mpolynomial::MPolynomial::linear_pown(&[-3.0, 5.0], &[1, 2], n_var, n);
+        assert_eq!(mpoly1, mpoly2);
+    }
+    #[test]
+    fn cube() {
+        // compare (-3x1+5x2)^6 using MPolynomial::mult and MPolynomial::linear_pown
+        let n_var = 2;
+        let n = 3;
+        // Create two copies of (3x1 +5x2)
+        let mut mpoly1 = mpolynomial::MPolynomial::new(n_var);
+        mpoly1.add(&vec![1, 0], -3.0);
+        mpoly1.add(&vec![0, 1], 5.0);
+        mpoly1.cube();
+
+        // power
+        let mpoly2 = mpolynomial::MPolynomial::linear_pown(&[-3.0, 5.0], &[1, 2], n_var, n);
+        assert_eq!(mpoly1, mpoly2);
+    }
+    #[test]
+    fn power() {
+        // compare (-3x1+5x2)^6 using MPolynomial::mult and MPolynomial::linear_pown
+        let n_var = 2;
+        let n = 100;
+        // Create two copies of (3x1 +5x2)
+        let mut mpoly1 = mpolynomial::MPolynomial::new(n_var);
+        mpoly1.add(&vec![1, 0], -3.0);
+        mpoly1.add(&vec![0, 1], 5.0);
+        let mut mpoly2 = mpoly1.clone();
+
+        // multiply
+        for _ in 1..n {
+            mpoly1.mult(&mpoly2);
+        }
+
+        // power 1
+        mpoly2.pown(n);
+        // power 2
+        //let mpoly2 = mpolynomial::MPolynomial::linear_pown(&[-3.0, 5.0], &[1, 2], n_var, n);
+        assert_eq!(mpoly1, mpoly2);
+    }
+    #[test]
+    fn power2() {
+        // compare (-3x1+5x2)^6 using MPolynomial::mult and MPolynomial::linear_pown
+        let n_var = 3;
+        let n = 3;
+        // Create two copies of (3x1 +5x2)
+        let mut mpoly1 = mpolynomial::MPolynomial::new(n_var);
+        mpoly1.add(&vec![1, 0,0], -3.0);
+        mpoly1.add(&vec![0, 1,0], 5.0);
+        mpoly1.add(&vec![0, 0,1], 7.0);
+        let mut mpoly2 = mpoly1.clone();
+
+        // multiply
+        for _ in 1..n {
+            mpoly1.mult(&mpoly2);
+        }
+
+        // power 1
+        mpoly2.pown2(n);
+        // power 2
+        //let mpoly2 = mpolynomial::MPolynomial::linear_pown(&[-3.0, 5.0], &[1, 2], n_var, n);
+        println!("{}\n{}", mpoly1, mpoly2);
+        assert_eq!(mpoly1, mpoly2);
+    }
 }
