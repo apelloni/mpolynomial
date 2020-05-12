@@ -1,7 +1,6 @@
 use num::Integer;
 use std::fmt;
 use crate::{MPolynomial, FloatLike};
-//extern crate mpolynomial;
 
 /* Utility functions */
 pub fn binomial<T: Integer + Copy + std::fmt::Debug>(n: T, k: T) -> T {

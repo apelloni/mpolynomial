@@ -1,6 +1,13 @@
 extern crate f128;
 
 use num_traits::{Float, FloatConst, FromPrimitive, Num, One, Signed, ToPrimitive, Zero};
+
+use num::traits::Inv;
+use num::traits::{NumAssign, NumOps, NumRef};
+use num::NumCast;
+use std::fmt::{Debug, Display, LowerExp};
+use std::iter::Sum;
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 //use utils::Signum;
 //pub mod test;
 
@@ -8,56 +15,64 @@ use num_traits::{Float, FloatConst, FromPrimitive, Num, One, Signed, ToPrimitive
 pub const MAX_VARIABLE: usize = 7;
 
 pub mod utils;
-use utils::{binomial, multinomial, next_combination_with_replacement};
+use utils::{multinomial, next_combination_with_replacement};
 
 pub trait FloatLike:
-From<f64>
-+ Num
-+ FromPrimitive
-+ Float
-+ Signed
-+ FloatConst
-+ std::fmt::LowerExp
-+ std::fmt::Debug
-//+ num_traits::float::FloatCore
-+ 'static
-//+ Signum
+    From<f64> + Field + Num + FromPrimitive + Float + Signed + FloatConst + LowerExp + Debug + 'static
 {
 }
+
+pub trait Field
+where
+    Self: Num,
+    Self: Mul<Self, Output = Self>,
+    Self: MulAssign<Self>,
+    Self: AddAssign<Self>,
+    Self: SubAssign<Self>,
+    Self: Div<Self, Output = Self>,
+    Self: Add<Self, Output = Self>,
+    Self: Sub<Self, Output = Self>,
+    Self: Neg<Output = Self>,
+    Self: Inv<Output = Self>,
+    Self: Sum<Self>,
+    Self: PartialEq,
+    Self: Copy,
+    Self: Default,
+    Self: Debug,
+    Self: Display,
+    Self: FromPrimitive,
+{
+}
+
+pub trait RealNumberLike
+where
+    Self: Field,
+    Self: Num,
+    Self: NumCast,
+    Self: Float,
+    Self: NumAssign,
+    Self: NumOps,
+    Self: NumRef,
+{
+}
+
+impl Field for f64 {}
+impl Field for f128::f128 {}
 
 impl FloatLike for f64 {}
 impl FloatLike for f128::f128 {}
 
+impl RealNumberLike for f64 {}
+impl RealNumberLike for f128::f128 {}
+impl<T: RealNumberLike> Field for num::Complex<T> {}
+
 #[derive(Default, Debug, Clone)]
-pub struct MPolynomialCache<
-    T: From<f64>
-        + Num
-        + FromPrimitive
-        + Float
-        + Signed
-        + FloatConst
-        + std::fmt::LowerExp
-        + std::fmt::Debug
-        + 'static,
->
-//<T: FloatLike>
-{
+pub struct MPolynomialCache<T: Field> {
     pub powers: Vec<Vec<usize>>,
     pub coeffs: Vec<T>,
     size: usize,
 }
-impl<
-        T: From<f64>
-            + Num
-            + FromPrimitive
-            + Float
-            + Signed
-            + FloatConst
-            + std::fmt::LowerExp
-            + std::fmt::Debug
-            + 'static,
-    > MPolynomialCache<T>
-{
+impl<T: Field> MPolynomialCache<T> {
     pub fn new() -> MPolynomialCache<T> {
         MPolynomialCache {
             powers: vec![],
@@ -68,19 +83,7 @@ impl<
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct MPolynomial<
-    T: From<f64>
-        + Num
-        + FromPrimitive
-        + Float
-        + Signed
-        + FloatConst
-        + std::fmt::LowerExp
-        + std::fmt::Debug
-        + 'static,
->
-//<T: FloatLike>
-{
+pub struct MPolynomial<T: Field> {
     //pub powers: Vec<(usize,Vec<usize>)>,
     pub powers: Vec<Vec<usize>>,
     pub coeffs: Vec<T>,
@@ -89,18 +92,7 @@ pub struct MPolynomial<
     pub cache: MPolynomialCache<T>,
 }
 
-impl<
-        T: From<f64>
-            + Num
-            + FromPrimitive
-            + Float
-            + Signed
-            + FloatConst
-            + std::fmt::LowerExp
-            + std::fmt::Debug
-            + 'static,
-    > MPolynomial<T>
-{
+impl<T: Field> MPolynomial<T> {
     pub fn new(n_var: usize) -> MPolynomial<T> {
         assert!(n_var <= MAX_VARIABLE, "Increase the value of MAX_VARIABLE");
         MPolynomial {
@@ -151,6 +143,15 @@ impl<
             }
         }
     }
+
+    /// Clear the polynomial as if it was newly creted keeping the
+    /// number of variables constant
+    pub fn clear(&mut self) {
+        self.powers.clear();
+        self.coeffs.clear();
+        self.max_rank = 0;
+    }
+
     // Take the n-th power of a multivariate linear function
     // (c + a1 * x1 + a2 * x2 + .. + ai * xi )^n
     // ids: are the ids coerresponding to the variables and constant
