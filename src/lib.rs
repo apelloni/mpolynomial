@@ -1,4 +1,5 @@
-use f128;
+extern crate f128;
+
 use num_traits::{Float, FloatConst, FromPrimitive, Num, One, Signed, ToPrimitive, Zero};
 //use utils::Signum;
 //pub mod test;
@@ -28,12 +29,35 @@ impl FloatLike for f64 {}
 impl FloatLike for f128::f128 {}
 
 #[derive(Default, Debug, Clone)]
-pub struct MPolynomialCache<T: FloatLike> {
+pub struct MPolynomialCache<
+    T: From<f64>
+        + Num
+        + FromPrimitive
+        + Float
+        + Signed
+        + FloatConst
+        + std::fmt::LowerExp
+        + std::fmt::Debug
+        + 'static,
+>
+//<T: FloatLike>
+{
     pub powers: Vec<Vec<usize>>,
     pub coeffs: Vec<T>,
     size: usize,
 }
-impl<T: FloatLike> MPolynomialCache<T> {
+impl<
+        T: From<f64>
+            + Num
+            + FromPrimitive
+            + Float
+            + Signed
+            + FloatConst
+            + std::fmt::LowerExp
+            + std::fmt::Debug
+            + 'static,
+    > MPolynomialCache<T>
+{
     pub fn new() -> MPolynomialCache<T> {
         MPolynomialCache {
             powers: vec![],
@@ -44,7 +68,19 @@ impl<T: FloatLike> MPolynomialCache<T> {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct MPolynomial<T: FloatLike> {
+pub struct MPolynomial<
+    T: From<f64>
+        + Num
+        + FromPrimitive
+        + Float
+        + Signed
+        + FloatConst
+        + std::fmt::LowerExp
+        + std::fmt::Debug
+        + 'static,
+>
+//<T: FloatLike>
+{
     //pub powers: Vec<(usize,Vec<usize>)>,
     pub powers: Vec<Vec<usize>>,
     pub coeffs: Vec<T>,
@@ -53,7 +89,18 @@ pub struct MPolynomial<T: FloatLike> {
     pub cache: MPolynomialCache<T>,
 }
 
-impl<T: FloatLike> MPolynomial<T> {
+impl<
+        T: From<f64>
+            + Num
+            + FromPrimitive
+            + Float
+            + Signed
+            + FloatConst
+            + std::fmt::LowerExp
+            + std::fmt::Debug
+            + 'static,
+    > MPolynomial<T>
+{
     pub fn new(n_var: usize) -> MPolynomial<T> {
         assert!(n_var <= MAX_VARIABLE, "Increase the value of MAX_VARIABLE");
         MPolynomial {
@@ -331,7 +378,7 @@ impl<T: FloatLike> MPolynomial<T> {
         let mut k_i: usize;
         let mut k = vec![0; n];
         loop {
-            // reset values 
+            // reset values
             for i in 0..n {
                 k[i] = 0;
             }
