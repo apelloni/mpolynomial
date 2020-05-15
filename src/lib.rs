@@ -176,10 +176,15 @@ impl<T: Field> MPolynomial<T> {
 
     /// Remove all the entries that are exactely zero
     pub fn drop_zeros(&mut self) {
-        for i in (0..self.powers.len()).rev() {
+        for i in (1..self.powers.len()).rev() {
             if self.coeffs[i] == T::zero() {
                 self.coeffs.remove(i);
                 self.powers.remove(i);
+            }
+        }
+        if self.coeffs[0] == T::zero() {
+            for p in self.powers[0].iter_mut() {
+                *p = 0;
             }
         }
     }
