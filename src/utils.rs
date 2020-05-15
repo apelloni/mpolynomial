@@ -1,6 +1,7 @@
 use num::Integer;
 use std::fmt;
-use crate::{MPolynomial, FloatLike};
+use num::Complex;
+use crate::{MPolynomial, FloatLike, Field, RealNumberLike};
 
 /* Utility functions */
 pub fn binomial<T: Integer + Copy + std::fmt::Debug>(n: T, k: T) -> T {
@@ -46,10 +47,24 @@ pub fn next_combination_with_replacement(state: &mut [usize], max_entry: usize) 
     false
 }
 
-impl fmt::Display for MPolynomial<f64> {
+impl <T: FloatLike> fmt::Display for MPolynomial<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (pows, c) in self.powers.iter().zip(self.coeffs.iter()) {
             write!(f, "{:+}", c)?;
+            for (n, p) in pows.iter().enumerate() {
+                if *p > 0 {
+                    write!(f, "*x{}^{}", n + 1, p)?;
+                }
+            }
+        }
+        write!(f, "")
+    }
+}
+
+impl <T: RealNumberLike> fmt::Display for MPolynomial<num::Complex<T>> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (pows, c) in self.powers.iter().zip(self.coeffs.iter()) {
+            write!(f, "({:+})", c)?;
             for (n, p) in pows.iter().enumerate() {
                 if *p > 0 {
                     write!(f, "*x{}^{}", n + 1, p)?;
