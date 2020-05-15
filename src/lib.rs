@@ -101,8 +101,10 @@ impl<T: Field> MPolynomial<T> {
     pub fn new(n_var: usize) -> MPolynomial<T> {
         assert!(n_var <= MAX_VARIABLE, "Increase the value of MAX_VARIABLE");
         MPolynomial {
-            powers: vec![vec![0; n_var]],
-            coeffs: vec![T::zero()],
+            powers: vec![],
+            coeffs: vec![],
+            //powers: vec![vec![0; n_var]],
+            //coeffs: vec![T::zero()],
             n_var: n_var,
             max_rank: vec![0; n_var],
             cache: MPolynomialCache::new(n_var),
@@ -340,6 +342,7 @@ impl<T: Field> MPolynomial<T> {
             }
         }
 
+        // TODO: use slice
         let mut pows = vec![0; self.n_var];
         let mut first = true;
         for (p2, &c2) in other.powers.iter().zip(other.coeffs.iter()) {
@@ -406,6 +409,18 @@ impl<T: Field> MPolynomial<T> {
         }
     }
     pub fn pown2(&mut self, n: usize) {
+        if n == 0 {
+            self.coeffs.resize(1, T::one());
+            self.coeffs[0] = T::one();
+            self.powers.resize(1, vec![0; self.n_var]);
+            for p in self.powers[0].iter_mut() {
+                *p = 0;
+            }
+            for max_pow in self.max_rank.iter_mut() {
+                *max_pow = 0;
+            }
+            return ();
+        }
         // In oder to multiply our polynomial by another we need to store
         // its coefficients
         self.to_cache();
@@ -457,9 +472,21 @@ impl<T: Field> MPolynomial<T> {
     }
 
     pub fn pown3(&mut self, n: usize) {
-        let tmp = self.clone();
-        for _ in 1..n {
-            self.mult(&tmp);
+        if n == 0 {
+            self.coeffs.resize(1, T::one());
+            self.coeffs[0] = T::one();
+            self.powers.resize(1, vec![0; self.n_var]);
+            for p in self.powers[0].iter_mut() {
+                *p = 0;
+            }
+            for max_pow in self.max_rank.iter_mut() {
+                *max_pow = 0;
+            }
+        } else {
+            let tmp = self.clone();
+            for _ in 1..n {
+                self.mult(&tmp);
+            }
         }
     }
 
@@ -467,7 +494,11 @@ impl<T: Field> MPolynomial<T> {
         match n {
             0 => {
                 self.coeffs.resize(1, T::one());
+                self.coeffs[0] = T::one();
                 self.powers.resize(1, vec![0; self.n_var]);
+                for p in self.powers[0].iter_mut() {
+                    *p = 0;
+                }
                 for max_pow in self.max_rank.iter_mut() {
                     *max_pow = 0;
                 }
