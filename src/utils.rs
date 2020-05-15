@@ -1,7 +1,7 @@
+use crate::{Field, FloatLike, MPolynomial, RealNumberLike};
+use num::Complex;
 use num::Integer;
 use std::fmt;
-use num::Complex;
-use crate::{MPolynomial, FloatLike, Field, RealNumberLike};
 
 /* Utility functions */
 pub fn binomial<T: Integer + Copy + std::fmt::Debug>(n: T, k: T) -> T {
@@ -24,7 +24,7 @@ pub fn binomial<T: Integer + Copy + std::fmt::Debug>(n: T, k: T) -> T {
 }
 
 /// Calculate the multinomial coefficient.
-pub fn multinomial<T:Integer + Copy + std::fmt::Debug>(k: &[T]) -> T {
+pub fn multinomial<T: Integer + Copy + std::fmt::Debug>(k: &[T]) -> T {
     let mut res = T::one();
     let mut p = T::zero();
     for &i in k {
@@ -47,7 +47,7 @@ pub fn next_combination_with_replacement(state: &mut [usize], max_entry: usize) 
     false
 }
 
-impl <T: FloatLike> fmt::Display for MPolynomial<T> {
+impl<T: FloatLike> fmt::Display for MPolynomial<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (pows, c) in self.powers.iter().zip(self.coeffs.iter()) {
             write!(f, "{:+}", c)?;
@@ -61,10 +61,14 @@ impl <T: FloatLike> fmt::Display for MPolynomial<T> {
     }
 }
 
-impl <T: RealNumberLike> fmt::Display for MPolynomial<num::Complex<T>> {
+impl<T: RealNumberLike> fmt::Display for MPolynomial<num::Complex<T>> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (pows, c) in self.powers.iter().zip(self.coeffs.iter()) {
-            write!(f, "({:+})", c)?;
+        for (i, (pows, c)) in self.powers.iter().zip(self.coeffs.iter()).enumerate() {
+            if i > 0 {
+                write!(f, "+({:})", c)?;
+            } else {
+                write!(f, "({:})", c)?;
+            }
             for (n, p) in pows.iter().enumerate() {
                 if *p > 0 {
                     write!(f, "*x{}^{}", n + 1, p)?;
