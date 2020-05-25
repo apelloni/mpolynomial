@@ -111,6 +111,28 @@ impl<T: Field> MPolynomial<T> {
         }
     }
 
+    pub fn zero(n_var: usize) -> MPolynomial<T> {
+        assert!(n_var <= MAX_VARIABLE, "Increase the value of MAX_VARIABLE");
+        MPolynomial {
+            powers: vec![vec![0; n_var]],
+            coeffs: vec![T::zero()],
+            n_var: n_var,
+            max_rank: vec![0; n_var],
+            cache: MPolynomialCache::new(n_var),
+        }
+    }
+
+    pub fn one(n_var: usize) -> MPolynomial<T> {
+        assert!(n_var <= MAX_VARIABLE, "Increase the value of MAX_VARIABLE");
+        MPolynomial {
+            powers: vec![vec![0; n_var]],
+            coeffs: vec![T::one()],
+            n_var: n_var,
+            max_rank: vec![0; n_var],
+            cache: MPolynomialCache::new(n_var),
+        }
+    }
+
     /// Add a new coefficient to the polynomial keeping the list sorted
     pub fn add(&mut self, pows: &[u8], coeff: T) -> bool {
         //match self.powers.binary_search(&(pows.len(),pows.clone())) {
