@@ -21,7 +21,17 @@ pub mod utils;
 use utils::{multinomial, next_combination_with_replacement};
 
 pub trait FloatLike:
-    From<f64> + Field + Num + FromPrimitive + Float + Signed + FloatConst + LowerExp + Debug + 'static
+    From<f64>
+    + Field
+    + Num
+    + FromPrimitive
+    + ToPrimitive
+    + Float
+    + Signed
+    + FloatConst
+    + LowerExp
+    + Debug
+    + 'static
 {
 }
 
@@ -43,6 +53,7 @@ where
     Self: Default,
     Self: Debug,
     Self: Display,
+    Self: ToPrimitive,
     Self: FromPrimitive,
 {
 }
@@ -198,7 +209,7 @@ impl<T: Field> MPolynomial<T> {
 
     /// Remove all the entries that are exactely zero and return a constant equal
     /// zero if all the coefficients are vanishing
-    pub fn drop_zeros(&mut self) {
+    pub fn drop_zeros(&mut self) -> &Self {
         for i in (1..self.powers.len()).rev() {
             if self.coeffs[i] == T::zero() {
                 self.coeffs.remove(i);
@@ -216,6 +227,7 @@ impl<T: Field> MPolynomial<T> {
                 self.powers.remove(0);
             }
         }
+        self
     }
 
     // Take the n-th power of a multivariate linear function
@@ -229,39 +241,46 @@ impl<T: Field> MPolynomial<T> {
         let mut pows = vec![0; n_var];
         let mut coeff_pows = [0; MAX_VARIABLE + 1];
         let mut vars = vec![0; n];
-        loop {
-            // Reset values
-            for n in 0..n_var {
-                pows[n] = 0;
-                coeff_pows[n] = 0;
-            }
-            coeff_pows[n_var] = 0;
-            coeff = T::one();
-
-            // Extract info
-            for v in vars.iter() {
-                coeff = coeff * coeffs[*v];
-                // TODO: merge these two
-                if ids[*v] > 0 {
-                    pows[ids[*v] - 1] += 1;
+        if n == 0 {
+            mpoly.add(&pows, T::one());
+            mpoly
+        } else {
+            loop {
+                // Reset values
+                for n in 0..n_var {
+                    pows[n] = 0;
+                    coeff_pows[n] = 0;
                 }
-                coeff_pows[ids[*v]] += 1;
+                coeff_pows[n_var] = 0;
+                coeff = T::one();
+
+                // Extract info
+                for v in vars.iter() {
+                    // TODO: merge these two
+                    if ids[*v] > 0 {
+                        pows[ids[*v] - 1] += 1;
+                    }
+                    coeff_pows[*v] += 1;
+                }
+                for (i, p) in coeff_pows[..=vars[n - 1]].iter().enumerate() {
+                    coeff *= MPolynomial::powi(coeffs[i], *p as i32);
+                }
+                // Multiply by multinomial
+                mpoly.add(
+                    &pows,
+                    coeff * T::from_usize(multinomial::<usize>(&coeff_pows[..=n_var])).unwrap(),
+                );
+                if !next_combination_with_replacement(&mut vars, ids.len() - 1) {
+                    break;
+                }
             }
-            // Multiply by multinomial
-            mpoly.add(
-                &pows,
-                coeff * T::from_usize(multinomial::<usize>(&coeff_pows[..=n_var])).unwrap(),
-            );
-            if !next_combination_with_replacement(&mut vars, ids.len() - 1) {
-                break;
-            }
+            mpoly
         }
-        mpoly
     }
 
     /// Replace one of the variables by a multinomial which is at most linear in all
     /// the variables
-    pub fn replace(&mut self, var_id: usize, coeffs: &[T], ids: &[usize]) {
+    pub fn replace(&mut self, var_id: usize, coeffs: &[T], ids: &[usize]) -> &Self {
         // using the fact the the coefficient are sorted we can simply iterate over them
         // and update the values
         assert_ne!(
@@ -326,6 +345,7 @@ impl<T: Field> MPolynomial<T> {
                 pos += 1;
             }
         }
+        self
     }
 
     /// Store the current information of the polynomial into its cache
@@ -356,14 +376,15 @@ impl<T: Field> MPolynomial<T> {
     }
 
     /// Rescale all the coefficeints by a scalar
-    pub fn scale(&mut self, scalar: T) {
+    pub fn scale(&mut self, scalar: T) -> &Self {
         for c in self.coeffs.iter_mut() {
             *c *= scalar
         }
+        self
     }
 
     /// Multiply the current polynomial with another and overwrite the original content
-    pub fn mult(&mut self, other: &MPolynomial<T>) {
+    pub fn mult(&mut self, other: &MPolynomial<T>) -> &Self {
         // In oder to multiply our polynomial by another we need to store
         // its coefficients
         self.to_cache();
@@ -392,8 +413,9 @@ impl<T: Field> MPolynomial<T> {
             }
             first = false;
         }
+        self
     }
-    pub fn square(&mut self) {
+    pub fn square(&mut self) -> &Self {
         // In oder to multiply our polynomial by another we need to store
         // its coefficients
         self.to_cache();
@@ -416,6 +438,7 @@ impl<T: Field> MPolynomial<T> {
                 self.add(&pows, self.cache.coeffs[n1] * self.cache.coeffs[n2]);
             }
         }
+        self
     }
 
     pub fn cube(&mut self) {
@@ -442,7 +465,22 @@ impl<T: Field> MPolynomial<T> {
             }
         }
     }
-    pub fn pown2(&mut self, n: usize) {
+
+    #[inline]
+    pub fn powi(x: T, n: i32) -> T {
+        if n == 0 {
+            T::one()
+        } else {
+            let r = MPolynomial::powi(x, n / 2);
+            if n % 2 == 0 {
+                r * r
+            } else {
+                r * r * x
+            }
+        }
+    }
+
+    pub fn pown2(&mut self, n: usize) -> &Self {
         if n == 0 {
             self.coeffs.resize(1, T::one());
             self.coeffs[0] = T::one();
@@ -453,8 +491,17 @@ impl<T: Field> MPolynomial<T> {
             for max_pow in self.max_rank.iter_mut() {
                 *max_pow = 0;
             }
-            return ();
+            return self;
         }
+
+        if self.coeffs.len() == 1 {
+            self.coeffs[0] = MPolynomial::powi(self.coeffs[0], n as i32);
+            for p in self.powers[0].iter_mut() {
+                *p *= n as u8;
+            }
+            return self;
+        }
+
         // In oder to multiply our polynomial by another we need to store
         // its coefficients
         self.to_cache();
@@ -503,9 +550,10 @@ impl<T: Field> MPolynomial<T> {
                 break;
             }
         }
+        self
     }
 
-    pub fn pown3(&mut self, n: usize) {
+    pub fn pown3(&mut self, n: usize) -> &Self {
         if n == 0 {
             self.coeffs.resize(1, T::one());
             self.coeffs[0] = T::one();
@@ -522,9 +570,10 @@ impl<T: Field> MPolynomial<T> {
                 self.mult(&tmp);
             }
         }
+        self
     }
 
-    pub fn pown(&mut self, n: usize) {
+    pub fn pown(&mut self, n: usize) -> &Self {
         match n {
             0 => {
                 self.coeffs.resize(1, T::one());
@@ -537,7 +586,7 @@ impl<T: Field> MPolynomial<T> {
                     *max_pow = 0;
                 }
             }
-            1 => return,
+            1 => return self,
             _ => {
                 if n % 2 == 0 {
                     self.pown(n / 2);
@@ -550,6 +599,7 @@ impl<T: Field> MPolynomial<T> {
                 }
             }
         }
+        self
     }
 }
 
