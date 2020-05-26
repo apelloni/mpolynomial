@@ -603,6 +603,18 @@ impl<T: Field> MPolynomial<T> {
     }
 }
 
+impl<'a, T: Field> MulAssign<&'a MPolynomial<T>> for MPolynomial<T> {
+    fn mul_assign(&mut self, other: &'a Self) {
+        self.mult(other);
+    }
+}
+
+impl<'a, T: Field> MulAssign<T> for MPolynomial<T> {
+    fn mul_assign(&mut self, other: T) {
+        self.scale(other);
+    }
+}
+
 impl<'a, T: Field> AddAssign<&'a MPolynomial<T>> for MPolynomial<T> {
     fn add_assign(&mut self, other: &'a Self) {
         for (pow, c) in other.powers.iter().zip(other.coeffs.iter()) {
