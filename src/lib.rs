@@ -4,7 +4,7 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
-use num_traits::{Float, FloatConst, FromPrimitive, Num, One, Signed, ToPrimitive, Zero};
+use num_traits::{Float, FloatConst, FromPrimitive, Num, Signed, ToPrimitive, Zero};
 
 use itertools::Itertools;
 
@@ -548,10 +548,10 @@ impl<T: Field> MPolynomial<T> {
 
         //dbg!(&highest_factor_monomial_powers);
 
-        let mut step = 1;
+        //let mut step = 1;
         while !result.is_zero() {
             //dbg!(&step);
-            step += 1;
+            //step += 1;
 
             // Check if we can factorize
             if !result.powers[result.coeffs.len() - 1]
@@ -632,7 +632,7 @@ impl<T: Field> MPolynomial<T> {
         let mut pows = vec![0; self.n_var];
         let mut coeff = T::one();
         let mut v = vec![0; n];
-        let mut pick = 0;
+        let mut pick : usize;
         let mut k_i: usize;
         let mut k = vec![0; n];
         loop {

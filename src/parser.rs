@@ -1,7 +1,7 @@
-use crate::{Field, MPolynomial};
+use crate::MPolynomial;
 use num::{BigInt, BigRational};
-use pest::iterators::{Pair, Pairs};
-use pest::{Parser, RuleType};
+use pest::iterators::Pairs;
+use pest::Parser;
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
