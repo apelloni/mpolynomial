@@ -1,4 +1,5 @@
 extern crate mpolynomial;
+use mpolynomial::parser::parse_expression;
 use mpolynomial::MPolynomial;
 
 fn main() {
@@ -6,26 +7,26 @@ fn main() {
     mpoly1.add(&[0, 1], 1.0);
     mpoly1.add(&[1, 0], 1.0);
     let mut mpoly2 = mpoly1.clone();
-    println!("mploy1: {}", mpoly1);
+    println!("mpoly1: {}", mpoly1);
 
     // -=
     mpoly1 -= &mpoly2;
-    println!("mploy1-mpoly2: {}", mpoly1);
+    println!("mpoly1-mpoly2: {}", mpoly1);
     println!("clean -> : {}", mpoly1.drop_zeros());
 
     // +=
     mpoly1 = mpoly2.clone();
     mpoly1 += &mpoly2;
-    println!("mploy1+mpoly2: {}", mpoly1);
+    println!("mpoly1+mpoly2: {}", mpoly1);
 
     // Rescale
     mpoly1 = mpoly2.clone();
-    println!("mploy1 * 10: {}", mpoly1.scale(10.0));
+    println!("mpoly1 * 10: {}", mpoly1.scale(&10.0));
 
     // Multiply
     mpoly1 = mpoly2.clone();
-    println!("mploy1: {}", mpoly1);
-    println!("mploy2: {}", mpoly2);
+    println!("mpoly1: {}", mpoly1);
+    println!("mpoly2: {}", mpoly2);
     mpoly1.mult(&mpoly2);
     mpoly1.mult(&mpoly2);
     println!("mpoly1*mpoly2*mpoly2: {}", mpoly1);
@@ -190,6 +191,102 @@ fn main() {
     let mpoly5 = 3.0_f64.powi(n as i32);
     println!("\t[powi]        {:?}", start.elapsed());
     let start = std::time::Instant::now();
-    let mpoly5 = MPolynomial::powi(3.0, n as i32);
+    let mpoly5 = MPolynomial::powi(&3.0, n as i32);
     println!("\t[powi]        {:?}", start.elapsed());
+
+    // Use BigRational
+    let start = std::time::Instant::now();
+    let c1 = num::BigInt::from(-10 as i64);
+    let c2 = num::BigInt::from(-231 as i64);
+    let c = num::BigRational::from(c1) / num::BigRational::from(c2);
+    let mut mpoly: MPolynomial<num::BigRational> = MPolynomial::new(3);
+    println!("{}", c);
+    mpoly.add(&[0, 0, 0], c.clone());
+    let mut poly = mpoly.clone();
+    let start = std::time::Instant::now();
+    poly.pown(100);
+    println!("\t[pown]        {:?}", start.elapsed());
+    poly = mpoly.clone();
+    let start = std::time::Instant::now();
+    mpoly.pown2(100);
+    println!("\t[pow2]        {:?}", start.elapsed());
+    poly = mpoly.clone();
+    let start = std::time::Instant::now();
+    MPolynomial::powi(&c, 100);
+    println!("\t[powi]        {:?}", start.elapsed());
+    //println!("{}", mpoly);
+
+    //
+    let mut mpoly: MPolynomial<num::BigRational> = MPolynomial::new(3);
+    let c1 = num::BigRational::from(num::BigInt::from(123 as i64))
+        / num::BigRational::from(num::BigInt::from(-145 as i64));
+    let c2 = num::BigRational::from(num::BigInt::from(58 as i64))
+        / num::BigRational::from(num::BigInt::from(85 as i64));
+    let v1 = num::BigRational::from(num::BigInt::from(1 as i64))
+        / num::BigRational::from(num::BigInt::from(2 as i64));
+
+    mpoly.add(&[1, 1, 0], c1);
+    mpoly.add(&[1, 2, 0], c2);
+    let var_names = vec![String::from("z"), String::from("w2"), String::from("x")];
+    println!("{}", mpoly);
+    println!("{}", mpoly.to_str(&var_names));
+
+    mpoly.replace(2, &[v1], &[0]);
+    println!("{}", mpoly);
+    println!("{:?}", 1_i32.checked_div(2));
+
+    // Try factorizing
+    let var_names = vec![
+        String::from("x1"),
+        String::from("x2"),
+        String::from("x3"),
+        String::from("x4"),
+    ];
+
+    let mpoly_str = "(11 x1 + 12 x2 + 99 x3 + 21x4)^30";
+    let factor_str = "(11 x1 + 12 x2 + 99 x3 + 21x4)^28";
+    println!("Check factorization of : {}", mpoly_str);
+    println!("  factor: {}", factor_str);
+    let c1 = num::BigRational::from(num::BigInt::from(11 as i64));
+    let c2 = num::BigRational::from(num::BigInt::from(12 as i64));
+    let c3 = num::BigRational::from(num::BigInt::from(99 as i64));
+    let c4 = num::BigRational::from(num::BigInt::from(21 as i64));
+    let start = std::time::Instant::now();
+    let mut mpoly = MPolynomial::linear_pown(
+        &[c1.clone(), c2.clone(), c3.clone(), c4.clone()],
+        &[1, 2, 3, 4],
+        4,
+        30,
+    );
+    let factor = MPolynomial::linear_pown(
+        &[c1.clone(), c2.clone(), c3.clone(), c4.clone()],
+        &[1, 2, 3, 4],
+        4,
+        28,
+    );
+    //println!("{}", mpoly);
+    println!("\t[linear_pown] {} in {:?}",mpoly.coeffs.len(), start.elapsed());
+    //    factor.add(&[2,2,2,2],1.0);
+    let start = std::time::Instant::now();
+    let mut factor_b = parse_expression(factor_str, &var_names);
+    let mut mpoly_b = parse_expression(mpoly_str, &var_names);
+    println!(
+        "\t[parser] {} in {:?}",
+        mpoly_b.coeffs.len(),
+        start.elapsed()
+    );
+
+    //println!("{}",mpoly);
+    //println!("{}",factor);
+    let start = std::time::Instant::now();
+    mpoly.exact_division(&factor).unwrap();
+    //println!("{}", mpoly);
+    assert_eq!("+441*x4^2+4158*x3^1*x4^1+9801*x3^2+504*x2^1*x4^1+2376*x2^1*x3^1+144*x2^2+462*x1^1*x4^1+2178*x1^1*x3^1+264*x1^1*x2^1+121*x1^2", format!("{}",mpoly));
+    println!("\t[exact division] in {:?}", start.elapsed());
+
+    factor_b -= &factor;
+    factor_b.drop_zeros();
+    //println!("{}", mpoly_b);
+    //println!("{}", factor_b);
+    //println!("{}", factor_b.to_str(&var_names));
 }

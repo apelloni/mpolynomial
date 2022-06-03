@@ -1,0 +1,21 @@
+alpha = { 'a'..'z' | 'A'..'Z' }
+digit = { '0'..'9'}
+var = { alpha+ ~ digit* }
+sign = {"+" | "-" }
+//num = { ("+" | "-")? ~ digit+}
+num = { sign? ~ digit+ }
+
+operation = _{ add | subtract | multiply | divide | power }
+    add      = { "+" }
+    subtract = { "-" }
+    multiply = { "*" }
+    divide   = { "/" }
+    power    = { "^" }
+
+expr = { operation? ~ term ~ (operation* ~ term)* }
+term = _{ num | var | "(" ~ expr ~ ")" }
+
+calculation = _{ SOI ~ expr ~ EOI }
+
+WHITESPACE = _{ " " | "\t" }
+

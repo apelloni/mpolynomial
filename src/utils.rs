@@ -1,35 +1,39 @@
-use crate::{Field, FloatLike, MPolynomial, RealNumberLike};
-use num::Complex;
+extern crate regex;
+
+use crate::{Field, FloatLike, MPolynomial, NumberLike, RealNumberLike};
 use num::Integer;
+use regex::Regex;
 use std::fmt;
 
 /* Utility functions */
-pub fn binomial<T: Integer + Copy + std::fmt::Debug>(n: T, k: T) -> T {
+pub fn binomial<T: Integer + Clone + std::fmt::Debug>(n: &T, k: &T) -> T {
     if k > n {
         return T::zero();
     }
-    if k > n - k {
-        return binomial(n, n - k);
+    if *k > n.clone() - k.clone() {
+        return binomial(n, &(n.clone() - k.clone()));
     }
     let mut res = T::one();
     let mut i = T::one();
     loop {
-        if i > k {
+        if i > *k {
             break;
         }
-        res = res * (n + T::one() - i) / i;
-        i = i + T::one();
+
+        res = res * (n.clone() + T::one() - i.clone()) / i.clone();
+        i = i.clone() + T::one();
     }
     res
 }
 
+
 /// Calculate the multinomial coefficient.
-pub fn multinomial<T: Integer + Copy + std::fmt::Debug>(k: &[T]) -> T {
+pub fn multinomial<T: Integer + Clone + std::fmt::Debug>(k: &[T]) -> T {
     let mut res = T::one();
     let mut p = T::zero();
-    for &i in k {
-        p = p + i;
-        res = res * binomial(p, i);
+    for i in k {
+        p = p.clone() + i.clone();
+        res = res * binomial(&p, i);
     }
     res
 }
@@ -47,17 +51,53 @@ pub fn next_combination_with_replacement(state: &mut [usize], max_entry: usize) 
     false
 }
 
-impl<T: FloatLike> fmt::Display for MPolynomial<T> {
+impl<T: NumberLike> fmt::Display for MPolynomial<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut is_zero = true;
         for (pows, c) in self.powers.iter().zip(self.coeffs.iter()) {
-            write!(f, "{:+}", c)?;
-            for (n, p) in pows.iter().enumerate() {
-                if *p > 0 {
-                    write!(f, "*x{}^{}", n + 1, p)?;
+            if T::zero() != *c {
+                is_zero = false;
+                write!(f, "{:+}", c)?;
+                for (n, p) in pows.iter().enumerate() {
+                    if *p > 0 {
+                        write!(f, "*x{}^{}", n + 1, p)?;
+                    }
                 }
             }
         }
-        write!(f, "")
+        if is_zero {
+            write!(f, "+0")
+        } else {
+            write!(f, "")
+        }
+    }
+}
+
+impl<T: Field> MPolynomial<T> {
+    /// Print the polynomail to string using the given names for the variables
+    /// The variable names must be of the form <char:1 or more><digits:0 or more>
+    pub fn to_str(&self, var_names: &[String]) -> String {
+        let rg = Regex::new(r"^[[:alpha:]]+\d*$").unwrap();
+        let rg2 = Regex::new(r"([+-])1\*").unwrap();
+        assert_eq!(var_names.len(), self.n_var);
+        assert!(var_names.iter().all(|var| rg.is_match(var)));
+
+        let mut spoly = String::new();
+        for (pows, c) in self.powers.iter().zip(self.coeffs.iter()) {
+            if T::zero() != *c {
+                std::fmt::write(&mut spoly, format_args!("{:+}", c)).unwrap();
+                for (n, p) in pows.iter().enumerate() {
+                    if *p > 0 {
+                        std::fmt::write(&mut spoly, format_args!("*{}^{}", var_names[n], p))
+                            .unwrap();
+                    }
+                }
+            }
+        }
+        if spoly.len() == 0 {
+            spoly = String::from("+0");
+        }
+        format!("{}", rg2.replace_all(spoly.as_str(), "$1"))
     }
 }
 

@@ -10,4 +10,7 @@ edition = "2018"
 num = "0.3"
 num-traits = "*"
 itertools = "*"
+regex = "*"
+pest = "2.1.3"
+pest_derive = "^2.1.0"
 f128 = { git = "https://github.com/benruijl/f128" }
