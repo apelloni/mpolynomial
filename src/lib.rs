@@ -20,6 +20,7 @@ use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 // TODO: use it
 pub const MAX_VARIABLE: usize = 7;
 
+pub mod gcd;
 pub mod parser;
 pub mod utils;
 use utils::{multinomial, next_combination_with_replacement};
@@ -179,6 +180,16 @@ impl<T: Field> MPolynomial<T> {
     pub fn is_monomial(&mut self) -> bool {
         self.drop_zeros();
         return self.coeffs.len() == 1;
+    }
+
+    /// Return the highest non-zero coefficients and its powers according
+    /// to the internal sorting
+    pub fn leading_coeff(&mut self) -> Option<(&T, &Vec<u16>)> {
+        self.coeffs
+            .iter()
+            .zip(self.powers.iter())
+            .rev()
+            .find(|(c, _)| *c != &T::zero())
     }
 
     /// Add a new coefficient to the polynomial keeping the list sorted
@@ -632,7 +643,7 @@ impl<T: Field> MPolynomial<T> {
         let mut pows = vec![0; self.n_var];
         let mut coeff = T::one();
         let mut v = vec![0; n];
-        let mut pick : usize;
+        let mut pick: usize;
         let mut k_i: usize;
         let mut k = vec![0; n];
         loop {

@@ -2,6 +2,7 @@ extern crate mpolynomial;
 use mpolynomial::parser::parse_expression;
 use mpolynomial::MPolynomial;
 
+#[allow(unused_variables, unused_mut, unused_assignments)]
 fn main() {
     let mut mpoly1 = MPolynomial::new(2);
     mpoly1.add(&[0, 1], 1.0);
