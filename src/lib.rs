@@ -184,12 +184,60 @@ impl<T: Field> MPolynomial<T> {
 
     /// Return the highest non-zero coefficients and its powers according
     /// to the internal sorting
-    pub fn leading_coeff(&mut self) -> Option<(&T, &Vec<u16>)> {
+    pub fn leading_coeff(&self) -> Option<(&T, &Vec<u16>)> {
         self.coeffs
             .iter()
             .zip(self.powers.iter())
             .rev()
             .find(|(c, _)| *c != &T::zero())
+    }
+
+    /// Rescale all powers by the highest common monomial
+    /// and return the powers corresponding powers
+    /// Example:
+    ///     x1*x2+x1 -> x2+1 (return [1,0])
+    pub fn monomial_rescale(&mut self) -> Vec<u16> {
+        let mut factor_powers = vec![u16::MAX; self.n_var];
+        if !self.is_zero() {
+            // Calling self::is_zero() also drops all zero
+            // coefficients from the polynomial
+            for pows in self.powers.iter() {
+                for vn in 0..self.n_var {
+                    if factor_powers[vn] > pows[vn] {
+                        factor_powers[vn] = pows[vn];
+                    }
+                }
+                if factor_powers.iter().all(|p| *p == 0) {
+                    return factor_powers;
+                }
+            }
+            for pows in self.powers.iter_mut() {
+                for vn in 0..self.n_var {
+                    pows[vn] -= factor_powers[vn];
+                }
+            }
+        }
+        factor_powers
+    }
+
+    /// Return the highest non-zero coefficients and its powers according
+    /// to the internal sorting
+    pub fn ranks_update(&mut self) {
+        for vn in 0..self.n_var {
+            self.max_rank[vn] = 0;
+        }
+
+        if !self.is_zero() {
+            // Calling self::is_zero() also drops all zero
+            // coefficients from the polynomial
+            for pows in self.powers.iter() {
+                for vn in 0..self.n_var {
+                    if self.max_rank[vn] < pows[vn] {
+                        self.max_rank[vn] = pows[vn];
+                    }
+                }
+            }
+        }
     }
 
     /// Add a new coefficient to the polynomial keeping the list sorted
