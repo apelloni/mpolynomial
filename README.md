@@ -2,6 +2,9 @@ Multi-dimensional Polynomials
 ==============================
 
 Peform operations with multivariate polynomials such as replacement and multiplication in **rust**.
+With this library one can import polynomial functions into rust in an easy way and perform simple operations end evaluations.
+
+
 The supported type for the coefficients are:
  - `f64` (real and complex)
  - `f128` (real and complex)
@@ -60,4 +63,7 @@ Here is a list of the function implemented for the structure `MPolynomial`:
  - `replace`: replace one variable with a linear polynomial (e.g. `x1-> c+2x1+3x2`)
  - `mult`: multiply the current polynomial by another and overwrite
  - `exact_division`: divide by one of the factors of the polynomial (otherwise fails)
+ - `euclidean_division`: returns both the quotient and remainder of the division
+ - `multivariate_gcd`: compute the gcd of two polynomial
+ - ...
  - ...
