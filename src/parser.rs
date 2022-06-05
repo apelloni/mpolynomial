@@ -242,6 +242,17 @@ mod test {
     }
 
     #[test]
+    fn minus_sign() {
+        //let expr = INIParser::parse(Rule::calculation, "w+a/ll123 + c4^3")
+        let var_names = vec![String::from("w"), String::from("a")];
+
+        // Check spaces
+        let expr_str = "-(1-w)";
+        let expr_parsed = parse_expression(expr_str, var_names.as_slice());
+        assert_eq!("-1+w^1", expr_parsed.to_str(var_names.as_slice()));
+    }
+
+    #[test]
     fn whitespaces() {
         //let expr = INIParser::parse(Rule::calculation, "w+a/ll123 + c4^3")
         let var_names = vec![String::from("w"), String::from("a")];
@@ -341,15 +352,21 @@ mod test {
     fn overflow() {
         let var_names = vec![String::from("x1"), String::from("x2")];
 
-        let mpoly_str = "(x1 + x2 )^66";
+        let mpoly_str = "(x1 + x2 )^200";
         println!("Check overflow for : {}", mpoly_str);
         let mut mpoly_a = MPolynomial::linear_pown(
             &[num::one::<BigRational>(), num::one::<BigRational>()],
-            &[1, 2],
+            &[1],
             2,
-            66,
+            200,
         );
-        let mut mpoly_b = parse_expression(mpoly_str, &var_names);
-        assert_eq!(mpoly_a.to_str(&var_names), mpoly_a.to_str(&var_names));
+        mpoly_a.replace(
+            1,
+            &[num::one::<BigRational>(), num::one::<BigRational>()],
+            &[1, 2],
+        );
+
+        let mpoly_b = parse_expression(mpoly_str, &var_names);
+        assert_eq!(mpoly_b.to_str(&var_names), mpoly_a.to_str(&var_names));
     }
 }

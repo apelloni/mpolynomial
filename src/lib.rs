@@ -44,6 +44,7 @@ where
     Self: Field,
     Self: Num,
     Self: Zero,
+    Self: PartialOrd,
     Self: Signed,
     Self: Debug,
 {
@@ -403,7 +404,10 @@ impl<T: Field> MPolynomial<T> {
             coeff = self.coeffs[pos].clone();
             var_pow = self.powers[pos][var_id - 1] as usize;
             // Take the corresponding power of the transformation
-            mpoly = MPolynomial::linear_pown(coeffs, ids, self.n_var, var_pow);
+            //mpoly = MPolynomial::linear_pown(coeffs, ids, self.n_var, var_pow);
+            mpoly = MPolynomial::linear_pown(coeffs, ids, self.n_var, 1);
+            mpoly.pown(var_pow);
+
             for (rep_pows, rep_coeff) in mpoly.powers.iter().zip(mpoly.coeffs.iter()) {
                 //println!("pos: {}", pos);
                 new_pows = rep_pows
@@ -660,6 +664,8 @@ impl<T: Field> MPolynomial<T> {
         }
     }
 
+    /// Makes use of the binomial expression which is compute over u64 integers.
+    /// This means that for large powers (>64) can potentially generate overflow
     pub fn pown2(&mut self, n: usize) -> &Self {
         if n == 0 {
             self.coeffs.resize(1, T::one());
