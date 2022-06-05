@@ -1,5 +1,6 @@
 Multi-dimensional Polynomials
 ==============================
+[![Build Status](https://travis-ci.com/apelloni/mpolynomial.svg?branch=main)](https://travis-ci.com/apelloni/mpolynomial)
 
 Peform operations with multivariate polynomials such as replacement and multiplication in **rust**.
 With this library one can import polynomial functions into rust in an easy way and perform simple operations end evaluations.
