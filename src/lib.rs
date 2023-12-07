@@ -9,11 +9,11 @@ use num_traits::{Float, FloatConst, FromPrimitive, Num, Signed, ToPrimitive, Zer
 use itertools::Itertools;
 
 use num::traits::{NumAssign, NumOps, NumRef};
-use num::BigRational;
 use num::NumCast;
+use num::{BigInt, BigRational};
 use std::fmt::{Debug, Display, LowerExp};
 use std::iter::Sum;
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 //use utils::Signum;
 //pub mod test;
 
@@ -22,6 +22,7 @@ pub const MAX_VARIABLE: usize = 7;
 
 pub mod gcd;
 pub mod parser;
+pub mod rational;
 pub mod utils;
 use utils::{multinomial, next_combination_with_replacement};
 
@@ -42,8 +43,9 @@ pub trait FloatLike:
 pub trait NumberLike
 where
     Self: Field,
-    Self: Num,
-    Self: Zero,
+    //Self: Num,
+    //Self: Zero,
+    Self: PartialEq,
     Self: PartialOrd,
     Self: Signed,
     Self: Debug,
@@ -56,12 +58,10 @@ where
     Self: MulAssign<Self>,
     Self: AddAssign<Self>,
     Self: SubAssign<Self>,
-    Self: Div<Self, Output = Self>,
     Self: Add<Self, Output = Self>,
     Self: Sub<Self, Output = Self>,
     Self: Neg<Output = Self>,
     Self: Sum<Self>,
-    Self: PartialEq,
     Self: Clone,
     Self: Debug,
     Self: Display,
@@ -73,7 +73,7 @@ where
 pub trait RealNumberLike
 where
     Self: Field,
-    Self: Num,
+    //Self: Num,
     Self: NumCast,
     Self: Float,
     Self: NumAssign,
@@ -85,7 +85,7 @@ where
 impl Field for f64 {}
 impl Field for f128::f128 {}
 impl Field for BigRational {}
-impl Field for num::BigInt {}
+impl Field for BigInt {}
 
 impl FloatLike for f64 {}
 impl FloatLike for f128::f128 {}
@@ -93,7 +93,7 @@ impl FloatLike for f128::f128 {}
 impl NumberLike for f64 {}
 impl NumberLike for f128::f128 {}
 impl NumberLike for BigRational {}
-impl NumberLike for num::BigInt {}
+impl NumberLike for BigInt {}
 
 impl RealNumberLike for f64 {}
 impl RealNumberLike for f128::f128 {}
@@ -152,6 +152,13 @@ impl<T: Field> MPolynomial<T> {
             max_rank: vec![0; n_var],
             cache: MPolynomialCache::new(n_var),
         }
+    }
+
+    /// Create a monomial
+    pub fn monomial(pows: &[u16], coeff: T) -> MPolynomial<T> {
+        let mut monomial = MPolynomial::new(pows.len());
+        monomial.add_coeff(pows, coeff);
+        monomial
     }
 
     /// Create a polynomial equal to a constant 1 with n variables
@@ -242,7 +249,7 @@ impl<T: Field> MPolynomial<T> {
     }
 
     /// Add a new coefficient to the polynomial keeping the list sorted
-    pub fn add(&mut self, pows: &[u16], coeff: T) -> bool {
+    pub fn add_coeff(&mut self, pows: &[u16], coeff: T) -> bool {
         //match self.powers.binary_search(&(pows.len(),pows.clone())) {
         for (pow, c_pow) in pows.iter().zip(self.cache.coeff_pows.iter_mut()) {
             *c_pow = *pow;
@@ -339,7 +346,7 @@ impl<T: Field> MPolynomial<T> {
         let mut coeff_pows = [0; MAX_VARIABLE + 1];
         let mut vars = vec![0; n];
         if n == 0 {
-            mpoly.add(&pows, T::one());
+            mpoly.add_coeff(&pows, T::one());
             mpoly
         } else {
             loop {
@@ -363,7 +370,7 @@ impl<T: Field> MPolynomial<T> {
                     coeff *= MPolynomial::powi(&coeffs[i], *p as i32);
                 }
                 // Multiply by multinomial
-                mpoly.add(
+                mpoly.add_coeff(
                     &pows,
                     coeff * T::from_usize(multinomial::<usize>(&coeff_pows[..=n_var])).unwrap(),
                 );
@@ -429,7 +436,7 @@ impl<T: Field> MPolynomial<T> {
                 } else {
                     // Whenever a new element is added we need to take into account
                     // the shift in position
-                    if self.add(&new_pows, new_coeff) {
+                    if self.add_coeff(&new_pows, new_coeff) {
                         //print!(" NEW!");
                         pos += 1;
                     }
@@ -508,7 +515,7 @@ impl<T: Field> MPolynomial<T> {
                 if first {
                     self.update(&pows, c2.clone() * self.cache.coeffs[n].clone());
                 } else {
-                    self.add(&pows, c2.clone() * self.cache.coeffs[n].clone());
+                    self.add_coeff(&pows, c2.clone() * self.cache.coeffs[n].clone());
                 }
             }
             first = false;
@@ -536,7 +543,7 @@ impl<T: Field> MPolynomial<T> {
                 for i in 0..self.n_var {
                     pows[i] = self.cache.powers[n1][i] + self.cache.powers[n2][i];
                 }
-                self.add(
+                self.add_coeff(
                     &pows,
                     self.cache.coeffs[n1].clone() * self.cache.coeffs[n2].clone(),
                 );
@@ -561,7 +568,7 @@ impl<T: Field> MPolynomial<T> {
                             + self.cache.powers[n2][i]
                             + self.cache.powers[n3][i];
                     }
-                    self.add(
+                    self.add_coeff(
                         &pows,
                         self.cache.coeffs[n1].clone()
                             * self.cache.coeffs[n2].clone()
@@ -728,7 +735,7 @@ impl<T: Field> MPolynomial<T> {
                 }
             }
             //println!("> {:?} | {:?}", &k[..=k_i], pows);
-            self.add(
+            self.add_coeff(
                 &pows,
                 coeff.clone() * T::from_usize(multinomial(&k[..=k_i])).unwrap(),
             );
@@ -810,10 +817,19 @@ impl<'a, T: Field> MulAssign<T> for MPolynomial<T> {
     }
 }
 
+impl<'a, T: Field> Add<&'a MPolynomial<T>> for &'a MPolynomial<T> {
+    type Output = MPolynomial<T>;
+    fn add(self, other: Self) -> MPolynomial<T> {
+        let mut out = self.clone();
+        out += &other;
+        out
+    }
+}
+
 impl<'a, T: Field> AddAssign<&'a MPolynomial<T>> for MPolynomial<T> {
     fn add_assign(&mut self, other: &'a Self) {
         for (pow, c) in other.powers.iter().zip(other.coeffs.iter()) {
-            self.add(pow, c.clone());
+            self.add_coeff(pow, c.clone());
         }
     }
 }
@@ -821,7 +837,16 @@ impl<'a, T: Field> AddAssign<&'a MPolynomial<T>> for MPolynomial<T> {
 impl<'a, T: Field> SubAssign<&'a MPolynomial<T>> for MPolynomial<T> {
     fn sub_assign(&mut self, other: &Self) {
         for (pow, c) in other.powers.iter().zip(other.coeffs.iter()) {
-            self.add(pow, -c.clone());
+            self.add_coeff(pow, -c.clone());
         }
+    }
+}
+
+impl<'a, T: Field> Sub<&'a MPolynomial<T>> for &'a MPolynomial<T> {
+    type Output = MPolynomial<T>;
+    fn sub(self, other: Self) -> MPolynomial<T> {
+        let mut out = self.clone();
+        out -= &other;
+        out
     }
 }
