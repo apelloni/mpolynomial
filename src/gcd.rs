@@ -164,14 +164,14 @@ pub fn multivariate_gcd(
 #[cfg(test)]
 mod tests {
     //use super::*;
-    use crate::parser::parse_expression;
+    use crate::parser::parse_polynomial;
 
     #[test]
     fn check_euclidean_division() {
         let variable = &[String::from("x")];
-        let mut poly_a = parse_expression("(1-x)(1+x)^2", variable);
-        let poly_b = parse_expression("(1-x)", variable);
-        let res = parse_expression("(1-x)", variable);
+        let mut poly_a = parse_polynomial("(1-x)(1+x)^2", variable);
+        let poly_b = parse_polynomial("(1-x)", variable);
+        let res = parse_polynomial("(1-x)", variable);
 
         println!("a = {}", poly_a.to_str(variable));
         println!("b = {}", poly_b.to_str(variable));
@@ -195,9 +195,9 @@ mod tests {
         let factor_str = "(1-x)^2";
         let res_str = "(1+x+x^2+x^3+x^4+x^5+x^6+x^7+x^8+x^9+x^10)^2";
 
-        let mut poly = parse_expression(poly_str, variable);
-        let factor = parse_expression(factor_str, variable);
-        let res = parse_expression(res_str, variable);
+        let mut poly = parse_polynomial(poly_str, variable);
+        let factor = parse_polynomial(factor_str, variable);
+        let res = parse_polynomial(res_str, variable);
 
         println!("a = {}", poly.to_str(variable));
         println!("b = {}", factor.to_str(variable));
@@ -219,10 +219,10 @@ mod tests {
     #[test]
     fn check_univariate_gcd() {
         let variable = &[String::from("x")];
-        let mut poly_a = parse_expression("(1-x)(1+x)^2", variable);
-        let mut poly_b = parse_expression("(1-x)", variable);
-        let red_a = parse_expression("(1+x)^2", variable);
-        let red_b = parse_expression("1", variable);
+        let mut poly_a = parse_polynomial("(1-x)(1+x)^2", variable);
+        let mut poly_b = parse_polynomial("(1-x)", variable);
+        let red_a = parse_polynomial("(1+x)^2", variable);
+        let red_b = parse_polynomial("1", variable);
 
         println!("a = {}", poly_a.to_str(variable));
         println!("b = {}", poly_b.to_str(variable));
@@ -249,10 +249,10 @@ mod tests {
         //let mpoly_str = "(11 x1^32 + 12 x2 + 99 x3 + 21 x1*x4)^10";
         //let factor_str = "(11 x1**32 + 12 x2 + 99 x3 + 21 x1*x4)^8";
 
-        let mut poly_a = parse_expression("(1-x)(1+x)^2", variable);
-        let mut poly_b = parse_expression("(1-x)(1+3x)", variable);
-        let red_a = parse_expression("(1+x)^2", variable);
-        let red_b = parse_expression("(1+3x)", variable);
+        let mut poly_a = parse_polynomial("(1-x)(1+x)^2", variable);
+        let mut poly_b = parse_polynomial("(1-x)(1+3x)", variable);
+        let red_a = parse_polynomial("(1+x)^2", variable);
+        let red_b = parse_polynomial("(1+3x)", variable);
 
         println!("a = {}", poly_a.to_str(variable));
         println!("b = {}", poly_b.to_str(variable));
@@ -278,7 +278,7 @@ mod tests {
     }
 
     #[test]
-    fn multivariate_gcd() {
+    fn multivariate_gcd_1() {
         let var_names = vec![
             String::from("x1"),
             String::from("x2"),
@@ -288,8 +288,8 @@ mod tests {
         // Multivariate
         let mpoly_a_str = "(x3-x2^2)^2";
         let mpoly_b_str = "(x3-x2^2)^1(1-x2)";
-        let mut mpoly_a = parse_expression(mpoly_a_str, &var_names);
-        let mut mpoly_b = parse_expression(mpoly_b_str, &var_names);
+        let mut mpoly_a = parse_polynomial(mpoly_a_str, &var_names);
+        let mut mpoly_b = parse_polynomial(mpoly_b_str, &var_names);
         println!("b = {}", mpoly_b.to_str(&var_names));
 
         println!("a = {}", mpoly_a_str);
@@ -313,8 +313,41 @@ mod tests {
         // Multivariate
         let mpoly_a_str = "(11 x1^32 + 12 x2 + 99 x3 + 21 x1*x4)^3";
         let mpoly_b_str = "(11 x1^32 + 12 x2 + 99 x3 + 21 x1*x4)^2*(1-x1)";
-        let mut mpoly_a = parse_expression(mpoly_a_str, &var_names);
-        let mut mpoly_b = parse_expression(mpoly_b_str, &var_names);
+        let mut mpoly_a = parse_polynomial(mpoly_a_str, &var_names);
+        let mut mpoly_b = parse_polynomial(mpoly_b_str, &var_names);
+        println!("b = {}", mpoly_b.to_str(&var_names));
+
+        println!("a = {}", mpoly_a_str);
+        println!("b = {}", mpoly_b_str);
+        let start = std::time::Instant::now();
+        let gcd = super::multivariate_gcd(&mpoly_a, &mpoly_b);
+        println!("\tGCD in {:?}", start.elapsed());
+
+        let start = std::time::Instant::now();
+        mpoly_a.exact_division(&gcd).unwrap();
+        mpoly_b.exact_division(&gcd).unwrap();
+        println!("\tLD  in {:?}", start.elapsed());
+
+        println!("gcd = {}", gcd.to_str(&var_names));
+        println!(
+            "a/b = ({}) / ({})",
+            mpoly_a.to_str(&var_names),
+            mpoly_b.to_str(&var_names)
+        );
+    }
+    #[test]
+    fn multivariate_gcd_2() {
+        let var_names = vec![
+            String::from("x1"),
+            String::from("x2"),
+            String::from("x3"),
+            String::from("x4"),
+        ];
+        // Multivariate
+        let mpoly_a_str = "(x1 x2^2+x1^2 x2)";
+        let mpoly_b_str = "(x1^2 x2^2)";
+        let mut mpoly_a = parse_polynomial(mpoly_a_str, &var_names);
+        let mut mpoly_b = parse_polynomial(mpoly_b_str, &var_names);
         println!("b = {}", mpoly_b.to_str(&var_names));
 
         println!("a = {}", mpoly_a_str);
