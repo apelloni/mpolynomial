@@ -1,3 +1,4 @@
+use crate::rational::MPolyRat;
 use crate::MPolynomial;
 use num::{BigInt, BigRational};
 use pest::iterators::Pairs;
@@ -7,18 +8,28 @@ use pest::Parser;
 #[grammar = "grammar.pest"]
 pub struct INIParser;
 
-pub fn parse_expression(expr: &str, var_names: &[String]) -> MPolynomial<BigRational> {
+pub fn parse_mpolyrat(expr: &str, var_names: &[String]) -> MPolyRat {
     let parsed = INIParser::parse(Rule::calculation, expr)
         .expect("Unsuccessful Parse") // unwrap the parse result
         .next()
         .unwrap(); // get and unwrap the `file` rule; never fails
     let n_var = var_names.len();
-    let mut parsed_polynomial = parsed_eval_fun(parsed.into_inner(), n_var, var_names);
+    let mut parsed_polynomial = parsed_eval_rat(parsed.into_inner(), n_var, var_names);
+    parsed_polynomial.drop_zeros();
+    parsed_polynomial
+}
+pub fn parse_polynomial(expr: &str, var_names: &[String]) -> MPolynomial<BigRational> {
+    let parsed = INIParser::parse(Rule::calculation, expr)
+        .expect("Unsuccessful Parse") // unwrap the parse result
+        .next()
+        .unwrap(); // get and unwrap the `file` rule; never fails
+    let n_var = var_names.len();
+    let mut parsed_polynomial = parsed_eval_poly(parsed.into_inner(), n_var, var_names);
     parsed_polynomial.drop_zeros();
     parsed_polynomial
 }
 
-pub fn parsed_eval_fun(
+pub fn parsed_eval_poly(
     parser_rules: Pairs<Rule>,
     n_var: usize,
     var_names: &[String],
@@ -30,8 +41,11 @@ pub fn parsed_eval_fun(
     let mut exponent: i32;
     let mut last_rule = Rule::add;
     let mut start_of_input = true;
+    let mut found_var;
+    let mut dpower = false;
     for parsed_rule in parser_rules.into_iter() {
         //println!("{:?} \"{}\"", parsed_rule.as_rule(), parsed_rule.as_str());
+        //println!("   Last rule: {:?}", last_rule);
         match parsed_rule.as_rule() {
             Rule::num | Rule::var | Rule::expr => {
                 // Process adjacent expressions as if there is an
@@ -54,13 +68,24 @@ pub fn parsed_eval_fun(
                             .parse::<i32>()
                             .expect("Exponent Parsing Error");
                         //assert!(exponent > 0, "Exponents must be positive!");
-                        if exponent <= 0 {
-                            res.pown((-exponent + 1) as usize);
-                            last_rule = Rule::divide;
-                        }
-                        if exponent > 0 {
-                            res.pown((exponent - 1) as usize);
-                            last_rule = Rule::multiply;
+                        if dpower {
+                            if exponent <= 0 {
+                                res.pown((-exponent + 1) as usize);
+                                last_rule = Rule::multiply;
+                            }
+                            if exponent > 0 {
+                                res.pown((exponent - 1) as usize);
+                                last_rule = Rule::divide;
+                            }
+                        } else {
+                            if exponent <= 0 {
+                                res.pown((-exponent + 1) as usize);
+                                last_rule = Rule::divide;
+                            }
+                            if exponent > 0 {
+                                res.pown((exponent - 1) as usize);
+                                last_rule = Rule::multiply;
+                            }
                         }
                     }
                     (_, Rule::num) => {
@@ -76,22 +101,34 @@ pub fn parsed_eval_fun(
                             *p = 0;
                         }
                         res.clear();
-                        res.add(&pows, coeff);
+                        res.add_coeff(&pows, coeff);
+                        dpower = last_rule == Rule::divide;
                     }
                     (_, Rule::var) => {
+                        found_var = false;
                         let coeff: BigRational = num::one();
                         for (vn, p) in pows.iter_mut().enumerate() {
                             if parsed_rule.clone().into_inner().as_str() == var_names[vn] {
                                 *p = 1;
+                                found_var = true;
                             } else {
                                 *p = 0;
                             }
                         }
+                        if !found_var {
+                            panic!(
+                                "Unknown variable {:?} found. [ vars={:?} ]",
+                                parsed_rule.into_inner().as_str(),
+                                var_names
+                            );
+                        }
                         res.clear();
-                        res.add(&pows, coeff);
+                        res.add_coeff(&pows, coeff);
+                        dpower = last_rule == Rule::divide;
                     }
                     (_, Rule::expr) => {
-                        res = parsed_eval_fun(parsed_rule.into_inner(), n_var, var_names);
+                        res = parsed_eval_poly(parsed_rule.clone().into_inner(), n_var, var_names);
+                        dpower = last_rule == Rule::divide;
                     }
                     _ => panic!("Impossible!"),
                 };
@@ -190,6 +227,204 @@ pub fn parsed_eval_fun(
         //);
     }
     if block.coeffs.len() != 0 {
+        out += &block;
+    }
+    //println!("{}", out);
+    //println!("{}", out.to_str(var_names));
+    out
+}
+
+pub fn parsed_eval_rat(parser_rules: Pairs<Rule>, n_var: usize, var_names: &[String]) -> MPolyRat {
+    let mut block = MPolyRat::new(n_var);
+    let mut out = MPolyRat::new(n_var);
+    let mut res = MPolyRat::new(n_var);
+    let mut pows = vec![0; n_var];
+    let mut exponent: i32;
+    let mut last_rule = Rule::add;
+    let mut start_of_input = true;
+    let mut found_var;
+    let mut dpower = false;
+    for parsed_rule in parser_rules.into_iter() {
+        //println!("{:?} \"{}\"", parsed_rule.as_rule(), parsed_rule.as_str());
+        match parsed_rule.as_rule() {
+            Rule::num | Rule::var | Rule::expr => {
+                // Process adjacent expressions as if there is an
+                // implicit multiplicaiton in between of them
+                if last_rule == Rule::num || last_rule == Rule::var || last_rule == Rule::expr {
+                    last_rule = Rule::multiply;
+                }
+
+                match (last_rule, parsed_rule.as_rule()) {
+                    // Process the information in the expression in terms of polynomial
+                    (Rule::power, Rule::num | Rule::expr) => {
+                        // Process the power of an expression considering
+                        // that one power its already stored in the block
+                        // so we need to generate the remaining (power-1)
+                        // contirbutions
+                        exponent = parsed_rule
+                            .clone()
+                            .into_inner()
+                            .as_str()
+                            .parse::<i32>()
+                            .expect("Exponent Parsing Error");
+                        //assert!(exponent > 0, "Exponents must be positive!");
+                        if dpower {
+                            if exponent <= 0 {
+                                res.pown((-exponent + 1) as usize);
+                                last_rule = Rule::multiply;
+                            }
+                            if exponent > 0 {
+                                res.pown((exponent - 1) as usize);
+                                last_rule = Rule::divide;
+                            }
+                        } else {
+                            if exponent <= 0 {
+                                res.pown((-exponent + 1) as usize);
+                                last_rule = Rule::divide;
+                            }
+                            if exponent > 0 {
+                                res.pown((exponent - 1) as usize);
+                                last_rule = Rule::multiply;
+                            }
+                        }
+                    }
+                    (_, Rule::num) => {
+                        let coeff = BigRational::from(
+                            parsed_rule
+                                .clone()
+                                .into_inner()
+                                .as_str()
+                                .parse::<BigInt>()
+                                .expect("BigInt Parsing Fail"),
+                        );
+                        for p in pows.iter_mut() {
+                            *p = 0;
+                        }
+                        res.clear();
+                        res.num.add_coeff(&pows, coeff);
+                        dpower = last_rule == Rule::divide;
+                    }
+                    (_, Rule::var) => {
+                        found_var = false;
+                        let coeff: BigRational = num::one();
+                        for (vn, p) in pows.iter_mut().enumerate() {
+                            if parsed_rule.clone().into_inner().as_str() == var_names[vn] {
+                                *p = 1;
+                                found_var = true;
+                            } else {
+                                *p = 0;
+                            }
+                        }
+                        if !found_var {
+                            panic!(
+                                "Unknown variable {:?} found. [ vars={:?} ]",
+                                parsed_rule.into_inner().as_str(),
+                                var_names
+                            );
+                        }
+                        res.clear();
+                        res.num.add_coeff(&pows, coeff);
+                        dpower = last_rule == Rule::divide;
+                    }
+                    (_, Rule::expr) => {
+                        res = parsed_eval_rat(parsed_rule.into_inner(), n_var, var_names);
+                        dpower = last_rule == Rule::divide;
+                    }
+                    _ => panic!("Impossible!"),
+                };
+                // append operation to the block based on `last_rule`
+                match last_rule {
+                    Rule::add => {
+                        block = res.clone();
+                    }
+                    Rule::subtract => {
+                        block.clear();
+                        block -= &res;
+                    }
+                    Rule::multiply => {
+                        block *= &res;
+                    }
+                    Rule::divide => {
+                        if res.is_constant() {
+                            block.scale(&(num::one::<BigRational>() / res.num.coeffs[0].clone()));
+                        } else {
+                            block /= &res;
+                        }
+                    }
+                    _ => {
+                        panic!("Unknown operation sequence! .. {:?}  expr ..", last_rule)
+                    }
+                };
+                last_rule = Rule::expr;
+            }
+            // When we have addition or subtraction we evaluate the block and add it to
+            // the output polynomial
+            Rule::add | Rule::subtract => {
+                match last_rule {
+                    Rule::num | Rule::var | Rule::expr => {
+                        if start_of_input {
+                            start_of_input = false;
+                            out = block.clone();
+                        } else {
+                            out += &block;
+                        }
+                        block.clear();
+                        last_rule = parsed_rule.as_rule();
+                    }
+                    Rule::add => {
+                        last_rule = if parsed_rule.as_rule() == Rule::add {
+                            Rule::add
+                        } else {
+                            Rule::subtract
+                        };
+                    }
+                    Rule::subtract => {
+                        last_rule = if parsed_rule.as_rule() == Rule::subtract {
+                            Rule::add
+                        } else {
+                            Rule::subtract
+                        };
+                    }
+                    _ => {
+                        panic!(
+                            "Unknown operation sequence! .. {:?}  {:?} ..",
+                            last_rule,
+                            parsed_rule.as_rule()
+                        )
+                    }
+                };
+            }
+            // The information about the binary operations *|/|^ that are performed within
+            // the block are used only a posteriori as information in `last_rule`
+            // The double multiplication is treated as a power operator
+            Rule::multiply | Rule::divide | Rule::power => {
+                match last_rule {
+                    Rule::num | Rule::var | Rule::expr => {
+                        last_rule = parsed_rule.as_rule();
+                    }
+                    Rule::multiply => last_rule = Rule::power,
+                    _ => {
+                        panic!(
+                            "Unknown operation sequence! .. {:?}  {:?} ..",
+                            last_rule,
+                            parsed_rule.as_rule()
+                        )
+                    }
+                };
+            }
+            x => {
+                println!("{:?}", x);
+                println!(" {:?}", parsed_rule.as_span());
+                last_rule = x;
+            }
+        };
+        //println!(
+        //    " -> {} [{}]",
+        //    out.to_str(var_names),
+        //    block.to_str(var_names)
+        //);
+    }
+    if block.num.coeffs.len() != 0 {
         out += &block;
     }
     //println!("{}", out);
