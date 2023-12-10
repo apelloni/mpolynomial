@@ -455,7 +455,7 @@ mod test {
         println!("input: {}", expr_str);
         let expr_parsed = parse_polynomial(expr_str, var_names.as_slice());
         println!("output: {}", expr_parsed.to_str(var_names.as_slice()));
-        assert_eq!("+2-w^1+w^30*a^2", expr_parsed.to_str(var_names.as_slice()));
+        assert_eq!("+2-w+w^30*a^2", expr_parsed.to_str(var_names.as_slice()));
 
         let expr_str = "1/(1-45^3-4*w*w+(2*w)^2)";
         println!("input: {}", expr_str);
@@ -484,11 +484,11 @@ mod test {
         let expr_str = "(1-w)^2/(1-w)";
         let mut expr_parsed = parse_mpolyrat(expr_str, var_names.as_slice());
         assert_eq!(
-            "(+1-2*w^1+w^2)/(+1-w^1)",
+            "(+1-2*w+w^2)/(+1-w)",
             expr_parsed.to_str(var_names.as_slice())
         );
         expr_parsed.reduce();
-        assert_eq!("(+1-w^1)/(+1)", expr_parsed.to_str(var_names.as_slice()));
+        assert_eq!("(+1-w)/(+1)", expr_parsed.to_str(var_names.as_slice()));
 
         //let expr_str = "w^0 ";
         let expr_str = "10+a^3*(7+a-a^2)*(w+1)^0";
@@ -505,7 +505,7 @@ mod test {
         println!("input: {}", expr_str);
         let expr_parsed = parse_mpolyrat(expr_str, var_names.as_slice());
         assert_eq!(
-            "(+2-w^1+w^30*a^2)/(+1)",
+            "(+2-w+w^30*a^2)/(+1)",
             expr_parsed.to_str(var_names.as_slice())
         );
 
@@ -536,7 +536,7 @@ mod test {
         // Check spaces
         let expr_str = "-(1-w)";
         let expr_parsed = parse_polynomial(expr_str, var_names.as_slice());
-        assert_eq!("-1+w^1", expr_parsed.to_str(var_names.as_slice()));
+        assert_eq!("-1+w", expr_parsed.to_str(var_names.as_slice()));
     }
 
     #[test]
@@ -565,7 +565,7 @@ mod test {
         // TEST
         let expr_str = "1/2(1-w/4+w(1/2-3/4))4+w^2*(w^23a^2w^5)";
         let expr_parsed = parse_polynomial(expr_str, var_names.as_slice());
-        assert_eq!("+2-w^1+w^30*a^2", expr_parsed.to_str(var_names.as_slice()));
+        assert_eq!("+2-w+w^30*a^2", expr_parsed.to_str(var_names.as_slice()));
 
         let expr_str = "( -     2             w  ^  3  + 4 )";
         let expr_parsed = parse_polynomial(expr_str, var_names.as_slice());
@@ -588,7 +588,7 @@ mod test {
 
         let expr_str = "1/2*(1-w/4+w*(1/2-3/4))*4+w**2*(w**23*a**2*w**5)";
         let expr_parsed = parse_polynomial(expr_str, var_names.as_slice());
-        assert_eq!("+2-w^1+w^30*a^2", expr_parsed.to_str(var_names.as_slice()));
+        assert_eq!("+2-w+w^30*a^2", expr_parsed.to_str(var_names.as_slice()));
 
         let expr_str = "1/(1-45**3-4*w*w+(2*w)**2)";
         let expr_parsed = parse_polynomial(expr_str, var_names.as_slice());
@@ -685,11 +685,13 @@ mod test {
         let var_names = vec![String::from("x1")];
 
         let mpoly_string = "(1-x1)^2/(1-x1)";
-        let mpolyrat = parse_mpolyrat(mpoly_string, &var_names);
+        let mut mpolyrat = parse_mpolyrat(mpoly_string, &var_names);
+        println!(">> {}", mpolyrat);
+        mpolyrat.reduce();
         println!(">> {}", mpolyrat);
 
         // Geometric Series
-        let  mpoly_string = "(1-x1^11)^2/(1-x1)^2";
+        let mpoly_string = "(1-x1^11)^2/(1-x1)^2";
         let res_str = "(1+x1+x1^2+x1^3+x1^4+x1^5+x1^6+x1^7+x1^8+x1^9+x1^10)^2";
         let mut mpolyrat = parse_mpolyrat(mpoly_string, &var_names);
         mpolyrat.reduce();
@@ -729,9 +731,9 @@ mod test {
         mpoly.exact_division(&factor).unwrap();
         println!(">> {}", mpoly);
         let mut ss = String::new();
-        ss += "+9801*x3^2+2376*x2^1*x3^1+144*x2^2+4158*x1^1*x3^1*x4^1";
-        ss += "+504*x1^1*x2^1*x4^1+441*x1^2*x4^2+2178*x1^32*x3^1";
-        ss += "+264*x1^32*x2^1+462*x1^33*x4^1+121*x1^64";
+        ss += "+9801*x3^2+2376*x2*x3+144*x2^2+4158*x1*x3*x4";
+        ss += "+504*x1*x2*x4+441*x1^2*x4^2+2178*x1^32*x3";
+        ss += "+264*x1^32*x2+462*x1^33*x4+121*x1^64";
         assert_eq!(ss, mpoly.to_str(&var_names));
     }
 

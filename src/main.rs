@@ -289,7 +289,7 @@ fn main() {
     let start = std::time::Instant::now();
     mpoly.exact_division(&factor).unwrap();
     //println!("{}", mpoly);
-    assert_eq!("+441*x4^2+4158*x3^1*x4^1+9801*x3^2+504*x2^1*x4^1+2376*x2^1*x3^1+144*x2^2+462*x1^1*x4^1+2178*x1^1*x3^1+264*x1^1*x2^1+121*x1^2", format!("{}",mpoly));
+    assert_eq!("+441*x4^2+4158*x3*x4+9801*x3^2+504*x2*x4+2376*x2*x3+144*x2^2+462*x1*x4+2178*x1*x3+264*x1*x2+121*x1^2", mpoly.to_str(&var_names));
     println!("\t[exact division] in {:?}", start.elapsed());
 
     factor_b -= &factor;

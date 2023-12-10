@@ -87,9 +87,15 @@ impl<T: Field> MPolynomial<T> {
             if T::zero() != *c {
                 std::fmt::write(&mut spoly, format_args!("{:+}", c)).unwrap();
                 for (n, p) in pows.iter().enumerate() {
-                    if *p > 0 {
-                        std::fmt::write(&mut spoly, format_args!("*{}^{}", var_names[n], p))
-                            .unwrap();
+                    match *p {
+                        0 => continue,
+                        1 => {
+                            std::fmt::write(&mut spoly, format_args!("*{}", var_names[n])).unwrap();
+                        }
+                        _ => {
+                            std::fmt::write(&mut spoly, format_args!("*{}^{}", var_names[n], p))
+                                .unwrap();
+                        }
                     }
                 }
             }
