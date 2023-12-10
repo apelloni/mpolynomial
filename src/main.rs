@@ -1,12 +1,15 @@
 extern crate mpolynomial;
-use mpolynomial::parser::parse_expression;
+use color_eyre::eyre::Result;
+use mpolynomial::parser::parse_polynomial;
 use mpolynomial::MPolynomial;
 
 #[allow(unused_variables, unused_mut, unused_assignments)]
 fn main() {
+    color_eyre::install().unwrap();
+
     let mut mpoly1 = MPolynomial::new(2);
-    mpoly1.add(&[0, 1], 1.0);
-    mpoly1.add(&[1, 0], 1.0);
+    mpoly1.add_coeff(&[0, 1], 1.0);
+    mpoly1.add_coeff(&[1, 0], 1.0);
     let mut mpoly2 = mpoly1.clone();
     println!("mpoly1: {}", mpoly1);
 
@@ -52,27 +55,27 @@ fn main() {
     let n = 5;
     // Create two copies of (3x1 +5x2+ x3)
     let mut mpoly1 = mpolynomial::MPolynomial::new(n_var);
-    mpoly1.add(&[1, 0, 0], 3.0);
-    mpoly1.add(&[0, 1, 0], 5.0);
-    mpoly1.add(&[0, 0, 1], 1.0);
-    mpoly1.add(&[1, 1, 0], 3.0);
-    mpoly1.add(&[0, 1, 1], 5.0);
-    mpoly1.add(&[1, 0, 1], 1.0);
-    mpoly1.add(&[1, 0, 1], 3.0);
-    mpoly1.add(&[1, 1, 0], 5.0);
-    mpoly1.add(&[0, 1, 1], 1.0);
-    mpoly1.add(&[1, 1, 1], 3.0);
-    //    mpoly1.add(&vec![0, 2, 0], 5.0);
-    //    mpoly1.add(&vec![0, 0, 2], 1.0);
-    //    mpoly1.add(&vec![2, 0, 0], 3.0);
-    //    mpoly1.add(&vec![1, 2, 0], 5.0);
-    //    mpoly1.add(&vec![1, 0, 2], 1.0);
-    //    mpoly1.add(&vec![2, 1, 0], 3.0);
-    //    mpoly1.add(&vec![0, 2, 1], 5.0);
-    //    mpoly1.add(&vec![0, 1, 2], 1.0);
-    //    mpoly1.add(&vec![2, 0, 1], 3.0);
-    //    mpoly1.add(&vec![1, 2, 1], 5.0);
-    //    mpoly1.add(&vec![1, 1, 2], 1.0);
+    mpoly1.add_coeff(&[1, 0, 0], 3.0);
+    mpoly1.add_coeff(&[0, 1, 0], 5.0);
+    mpoly1.add_coeff(&[0, 0, 1], 1.0);
+    mpoly1.add_coeff(&[1, 1, 0], 3.0);
+    mpoly1.add_coeff(&[0, 1, 1], 5.0);
+    mpoly1.add_coeff(&[1, 0, 1], 1.0);
+    mpoly1.add_coeff(&[1, 0, 1], 3.0);
+    mpoly1.add_coeff(&[1, 1, 0], 5.0);
+    mpoly1.add_coeff(&[0, 1, 1], 1.0);
+    mpoly1.add_coeff(&[1, 1, 1], 3.0);
+    //    mpoly1.add_coeff(&vec![0, 2, 0], 5.0);
+    //    mpoly1.add_coeff(&vec![0, 0, 2], 1.0);
+    //    mpoly1.add_coeff(&vec![2, 0, 0], 3.0);
+    //    mpoly1.add_coeff(&vec![1, 2, 0], 5.0);
+    //    mpoly1.add_coeff(&vec![1, 0, 2], 1.0);
+    //    mpoly1.add_coeff(&vec![2, 1, 0], 3.0);
+    //    mpoly1.add_coeff(&vec![0, 2, 1], 5.0);
+    //    mpoly1.add_coeff(&vec![0, 1, 2], 1.0);
+    //    mpoly1.add_coeff(&vec![2, 0, 1], 3.0);
+    //    mpoly1.add_coeff(&vec![1, 2, 1], 5.0);
+    //    mpoly1.add_coeff(&vec![1, 1, 2], 1.0);
 
     let mut mpoly2 = mpoly1.clone();
     let mut mpoly3 = mpoly1.clone();
@@ -109,9 +112,9 @@ fn main() {
     // power of linear expression
     println!("Linear:");
     let mut mpoly1 = mpolynomial::MPolynomial::new(n_var);
-    mpoly1.add(&[1, 0, 0], 3.0);
-    mpoly1.add(&[0, 1, 0], 5.0);
-    mpoly1.add(&[0, 0, 1], 1.0);
+    mpoly1.add_coeff(&[1, 0, 0], 3.0);
+    mpoly1.add_coeff(&[0, 1, 0], 5.0);
+    mpoly1.add_coeff(&[0, 0, 1], 1.0);
     let mut mpoly2 = mpoly1.clone();
 
     let start = std::time::Instant::now();
@@ -132,9 +135,9 @@ fn main() {
     let mut mpoly: MPolynomial<f64> = MPolynomial::new(3);
     mpoly.coeffs.clear();
     mpoly.powers.clear();
-    mpoly.add(&[1, 0, 1], 1.0);
-    mpoly.add(&[2, 1, 0], 3.0);
-    mpoly.add(&[1, 3, 0], 5.0);
+    mpoly.add_coeff(&[1, 0, 1], 1.0);
+    mpoly.add_coeff(&[2, 1, 0], 3.0);
+    mpoly.add_coeff(&[1, 3, 0], 5.0);
     println!("{}", mpoly);
     mpoly.replace(1, &[7.0], &[0]);
     println!("{}", mpoly);
@@ -144,7 +147,7 @@ fn main() {
     let n = 5;
     // Create two copies of (3x1 +5x2+ x3)
     let mut mpoly1 = mpolynomial::MPolynomial::new(n_var);
-    mpoly1.add(&[0, 0, 1], 3.0);
+    mpoly1.add_coeff(&[0, 0, 1], 3.0);
     let mut mpoly2 = mpoly1.clone();
     let mut mpoly3 = mpoly1.clone();
     let mut mpoly4 = mpoly1.clone();
@@ -202,7 +205,7 @@ fn main() {
     let c = num::BigRational::from(c1) / num::BigRational::from(c2);
     let mut mpoly: MPolynomial<num::BigRational> = MPolynomial::new(3);
     println!("{}", c);
-    mpoly.add(&[0, 0, 0], c.clone());
+    mpoly.add_coeff(&[0, 0, 0], c.clone());
     let mut poly = mpoly.clone();
     let start = std::time::Instant::now();
     poly.pown(100);
@@ -226,8 +229,8 @@ fn main() {
     let v1 = num::BigRational::from(num::BigInt::from(1 as i64))
         / num::BigRational::from(num::BigInt::from(2 as i64));
 
-    mpoly.add(&[1, 1, 0], c1);
-    mpoly.add(&[1, 2, 0], c2);
+    mpoly.add_coeff(&[1, 1, 0], c1);
+    mpoly.add_coeff(&[1, 2, 0], c2);
     let var_names = vec![String::from("z"), String::from("w2"), String::from("x")];
     println!("{}", mpoly);
     println!("{}", mpoly.to_str(&var_names));
@@ -266,11 +269,15 @@ fn main() {
         28,
     );
     //println!("{}", mpoly);
-    println!("\t[linear_pown] {} in {:?}",mpoly.coeffs.len(), start.elapsed());
-    //    factor.add(&[2,2,2,2],1.0);
+    println!(
+        "\t[linear_pown] {} in {:?}",
+        mpoly.coeffs.len(),
+        start.elapsed()
+    );
+    //    factor.add_coeff(&[2,2,2,2],1.0);
     let start = std::time::Instant::now();
-    let mut factor_b = parse_expression(factor_str, &var_names);
-    let mut mpoly_b = parse_expression(mpoly_str, &var_names);
+    let mut factor_b = parse_polynomial(factor_str, &var_names);
+    let mut mpoly_b = parse_polynomial(mpoly_str, &var_names);
     println!(
         "\t[parser] {} in {:?}",
         mpoly_b.coeffs.len(),
