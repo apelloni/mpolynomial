@@ -26,7 +26,6 @@ pub fn binomial<T: Integer + Clone + std::fmt::Debug>(n: &T, k: &T) -> T {
     res
 }
 
-
 /// Calculate the multinomial coefficient.
 pub fn multinomial<T: Integer + Clone + std::fmt::Debug>(k: &[T]) -> T {
     let mut res = T::one();
@@ -60,7 +59,8 @@ impl<T: NumberLike> fmt::Display for MPolynomial<T> {
                 write!(f, "{:+}", c)?;
                 for (n, p) in pows.iter().enumerate() {
                     if *p > 0 {
-                        write!(f, "*x{}^{}", n + 1, p)?;
+                        //write!(f, "*x{}^{}", n + 1, p)?;
+                        write!(f, "*\x1b[32;1mx{}\x1b[33m^{}\x1b[m", n + 1, p)?;
                     }
                 }
             }
@@ -140,6 +140,25 @@ impl<T: FloatLike> PartialEq<MPolynomial<T>> for MPolynomial<T> {
             //);
             if p1 != p2 || ((*c1 - *c2) / *c2).abs() > T::from_f64(1e-14).unwrap() {
                 //c1 != c2 {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+impl PartialEq<MPolynomial<num::BigRational>> for MPolynomial<num::BigRational> {
+    fn eq(&self, other: &MPolynomial<num::BigRational>) -> bool {
+        if self.coeffs.len() != other.coeffs.len() {
+            return false;
+        }
+        for ((p1, c1), (p2, c2)) in self
+            .powers
+            .iter()
+            .zip(self.coeffs.iter())
+            .zip(other.powers.iter().zip(other.coeffs.iter()))
+        {
+            if p1 != p2 || c1 != c2 {
                 return false;
             }
         }
